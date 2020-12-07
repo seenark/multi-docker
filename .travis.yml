@@ -1,0 +1,25 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t seenark/react-test -f ./client/Dockerfile.dev ./client
+script:
+  - docker run -e CI=true seenark/react-test npm test
+  ## "-e CI=true" this mean when run test completed whether success or fail docker will not launching any watcher
+
+after_sucess:
+  ## build all image keep ready for push to Docker hub
+  - docker build -t seenark/multi-client ./client
+  - docker build -t seenark/multi-nginx ./nginx
+  - docker build -t seenark/multi-server ./server
+  - docker build -t seeanrk/worker ./worker
+
+  # log in to docker CLI but we didn't store username and password here we will store in travis environment variable secret
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+
+  #take those images to docker hub
+  - docker push seenark/multi-client
+  - docker push seenark/multi-nginx
+  - docker push seenark/multi-server
+  - docker push seenark/multi-worker
